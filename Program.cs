@@ -1,52 +1,71 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using SkarpaAdminApi.Models;
 using Supabase;
 using static Supabase.Postgrest.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Register Supabase Client
 var url = builder.Configuration["Supabase:Url"]
     ?? throw new InvalidOperationException("Supabase:Url is missing.");
 var key = builder.Configuration["Supabase:SecretKey"]
     ?? throw new InvalidOperationException("Supabase:SecretKey is missing.");
+var adminEmail = builder.Configuration["AdminEmail"]
+    ?? throw new InvalidOperationException("AdminEmail is missing.");
 
+// 1. Supabase client (service_role for DB queries)
 builder.Services.AddScoped(_ => new Client(url, key, new SupabaseOptions
 {
     AutoRefreshToken = false,
     AutoConnectRealtime = false
 }));
 
-// 2. CORS for local dev and your Vercel admin frontend
+// 2. CORS (allow local dev + your Vercel frontend)
+var allowedOrigins = builder.Configuration["AllowedOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    ?? ["http://localhost:3000"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AdminFrontend", policy =>
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "https://your-admin-app.vercel.app")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod());
 });
 
-var app = builder.Build();
-app.UseCors("AdminFrontend");
-
-// 3. API Key Middleware
-app.Use(async (context, next) =>
-{
-    var expectedKey = app.Configuration["AdminApiKey"];
-    if (string.IsNullOrEmpty(expectedKey) ||
-        !context.Request.Headers.TryGetValue("X-Api-Key", out var providedKey) ||
-        providedKey != expectedKey)
+// 3. Supabase Auth JWT Verification
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        context.Response.StatusCode = 401;
-        await context.Response.WriteAsync("Unauthorized");
-        return;
-    }
+        options.Authority = $"{url}/auth/v1";
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = $"{url}/auth/v1",
+            ValidateAudience = true,
+            ValidAudience = "authenticated",
+            ValidateLifetime = true
+        };
+    });
 
-    await next();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireAssertion(ctx =>
+              {
+                  var email = ctx.User.FindFirstValue(ClaimTypes.Email) ?? ctx.User.FindFirstValue("email");
+                  return string.Equals(email, adminEmail, StringComparison.OrdinalIgnoreCase);
+              }));
 });
 
-// 4. Endpoints
+var app = builder.Build();
 
-// GET /api/bookings (defaults to today in Sweden) or /api/bookings?date=2026-11-18
+app.UseCors("AdminFrontend");
+app.UseAuthentication();
+app.UseAuthorization();
+
+// 4. Protected Endpoints
 app.MapGet("/api/bookings", async (DateOnly? date, Client supabase) =>
 {
     var stockholmTz = TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm");
@@ -73,9 +92,8 @@ app.MapGet("/api/bookings", async (DateOnly? date, Client supabase) =>
     ));
 
     return Results.Ok(results);
-});
+}).RequireAuthorization("AdminOnly");
 
-// GET /api/customers
 app.MapGet("/api/customers", async (Client supabase) =>
 {
     var response = await supabase
@@ -93,6 +111,6 @@ app.MapGet("/api/customers", async (Client supabase) =>
     ));
 
     return Results.Ok(results);
-});
+}).RequireAuthorization("AdminOnly");
 
 app.Run();
