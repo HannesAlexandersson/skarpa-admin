@@ -29,6 +29,9 @@ public class Booking : BaseModel
     [Column("pickup_address")]
     public string? PickupAddress { get; set; }
 
+    [Column("knife_count")]
+    public short KnifeCount { get; set; }
+
     [Column("created_at")]
     public DateTimeOffset CreatedAt { get; set; }
 

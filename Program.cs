@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using SkarpaAdminApi;
 using SkarpaAdminApi.Models;
 using Supabase;
 using static Supabase.Postgrest.Constants;
@@ -78,7 +79,16 @@ app.MapGet("/api/bookings", async (DateOnly? date, Client supabase) =>
         .Order("pickup_time", Ordering.Ascending)
         .Get();
 
-    var results = response.Models.Select(b => new PickupBookingDto(
+    var bookingIds = response.Models.Select(b => (object)b.Id.ToString()).ToList();
+    var payments = bookingIds.Count == 0 ? new List<Payment>() : (await supabase
+        .From<Payment>()
+        .Filter("booking_id", Operator.In, bookingIds)
+        .Order("created_at", Ordering.Ascending)
+        .Get()).Models;
+
+    var results = response.Models.Select(b => {
+      var payment = payments.LastOrDefault(p => p.BookingId == b.Id);
+      return new PickupBookingDto(
         Id: b.Id,
         PickupDate: b.PickupDate,
         PickupTime: b.PickupTime,
@@ -88,8 +98,14 @@ app.MapGet("/api/bookings", async (DateOnly? date, Client supabase) =>
         CustomerId: b.CustomerId,
         CustomerName: b.Customer?.Name ?? "Unknown",
         CustomerPhone: b.Customer?.Phone ?? "No phone",
-        CustomerEmail: b.Customer?.Email
-    ));
+        CustomerEmail: b.Customer?.Email,
+        KnifeCount: b.KnifeCount,
+        PaymentId: payment?.Id,
+        PaymentMethod: payment?.MethodCode,
+        PaymentStatus: payment?.Status,
+        AmountOre: payment?.AmountOre
+      );
+    });
 
     return Results.Ok(results);
 }).RequireAuthorization("AdminOnly");
@@ -112,5 +128,7 @@ app.MapGet("/api/customers", async (Client supabase) =>
 
     return Results.Ok(results);
 }).RequireAuthorization("AdminOnly");
+
+app.MapAdminEndpoints();
 
 app.Run();
