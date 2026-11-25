@@ -32,6 +32,15 @@ public class Booking : BaseModel
     [Column("knife_count")]
     public short KnifeCount { get; set; }
 
+    [Column("withdrawal_consent_at")]
+    public DateTimeOffset? WithdrawalConsentAt { get; set; }
+
+    [Column("withdrawal_consent_text")]
+    public string? WithdrawalConsentText { get; set; }
+
+    [Column("withdrawal_consent_version")]
+    public string? WithdrawalConsentVersion { get; set; }
+
     [Column("created_at")]
     public DateTimeOffset CreatedAt { get; set; }
 

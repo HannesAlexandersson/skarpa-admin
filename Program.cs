@@ -103,7 +103,10 @@ app.MapGet("/api/bookings", async (DateOnly? date, Client supabase) =>
         PaymentId: payment?.Id,
         PaymentMethod: payment?.MethodCode,
         PaymentStatus: payment?.Status,
-        AmountOre: payment?.AmountOre
+        AmountOre: payment?.AmountOre,
+        WithdrawalConsentAt: b.WithdrawalConsentAt,
+        WithdrawalConsentText: b.WithdrawalConsentText,
+        WithdrawalConsentVersion: b.WithdrawalConsentVersion
       );
     });
 

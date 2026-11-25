@@ -15,7 +15,10 @@ public record PickupBookingDto(
     Guid? PaymentId,
     string? PaymentMethod,
     string? PaymentStatus,
-    int? AmountOre
+    int? AmountOre,
+    DateTimeOffset? WithdrawalConsentAt,
+    string? WithdrawalConsentText,
+    string? WithdrawalConsentVersion
 );
 
 public record CustomerDto(
