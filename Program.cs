@@ -144,7 +144,7 @@ app.MapGet("/api/bookings/{id:guid}", async (Guid id, Client supabase) =>
         try
         {
             signedUrl = await supabase.Storage
-                .From("booking-photos")
+                .From("booking_photos")
                 .CreateSignedUrl(p.StoragePath, 3600);
         }
         catch
@@ -216,7 +216,7 @@ app.MapPost("/api/bookings/{id:guid}/photos", async (
     var storagePath = $"{id}/{Guid.NewGuid():N}.jpg";
 
     await supabase.Storage
-        .From("booking-photos")
+        .From("booking_photos")
         .Upload(bytes, storagePath, new Supabase.Storage.FileOptions
         {
             ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "image/jpeg" : file.ContentType,
@@ -234,7 +234,7 @@ app.MapPost("/api/bookings/{id:guid}/photos", async (
     var created = insertRes.Models.First();
 
     var signedUrl = await supabase.Storage
-        .From("booking-photos")
+        .From("booking_photos")
         .CreateSignedUrl(created.StoragePath, 3600);
 
     var dto = new BookingPhotoDto(
@@ -267,7 +267,7 @@ app.MapDelete("/api/bookings/{id:guid}/photos/{photoId:guid}", async (
     try
     {
         await supabase.Storage
-            .From("booking-photos")
+            .From("booking_photos")
             .Remove(new List<string> { photo.StoragePath });
     }
     catch
