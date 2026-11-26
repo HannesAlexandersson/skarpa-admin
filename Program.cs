@@ -5,6 +5,7 @@ using SkarpaAdminApi;
 using SkarpaAdminApi.Models;
 using Supabase;
 using static Supabase.Postgrest.Constants;
+using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,13 @@ builder.Services.AddScoped(_ => new Client(url, key, new SupabaseOptions
     AutoRefreshToken = false,
     AutoConnectRealtime = false
 }));
+
+// 1.B Resend service
+builder.Services.AddResend(o =>
+{
+    o.ApiToken = builder.Configuration["Resend:ApiKey"]
+        ?? throw new InvalidOperationException("Resend:ApiKey is missing.");
+});
 
 // 2. CORS (allow local dev + your Vercel frontend)
 var allowedOrigins = builder.Configuration["AllowedOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -180,7 +188,9 @@ app.MapGet("/api/bookings/{id:guid}", async (Guid id, Client supabase) =>
         WithdrawalConsentAt: booking.WithdrawalConsentAt,
         WithdrawalConsentText: booking.WithdrawalConsentText,
         WithdrawalConsentVersion: booking.WithdrawalConsentVersion,
-        Photos: photoDtos
+        Photos: photoDtos,
+        ConfirmationSentAt: booking.ConfirmationSentAt,
+        ReceiptSentAt: booking.ReceiptSentAt
     );
 
     return Results.Ok(detail);
@@ -303,5 +313,6 @@ app.MapGet("/api/customers", async (Client supabase) =>
 }).RequireAuthorization("AdminOnly");
 
 app.MapAdminEndpoints();
+app.MapEmailEndpoints();
 
 app.Run();

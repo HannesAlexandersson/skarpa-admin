@@ -46,7 +46,9 @@ public record BookingDetailDto(
     DateTimeOffset? WithdrawalConsentAt,
     string? WithdrawalConsentText,
     string? WithdrawalConsentVersion,
-    List<BookingPhotoDto> Photos
+    List<BookingPhotoDto> Photos,
+    DateTime? ConfirmationSentAt,
+    DateTime? ReceiptSentAt
 );
 
 public record CustomerDto(

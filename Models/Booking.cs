@@ -46,4 +46,10 @@ public class Booking : BaseModel
 
     [Column("updated_at")]
     public DateTimeOffset UpdatedAt { get; set; }
+
+    [Column("confirmation_sent_at")]
+    public DateTime? ConfirmationSentAt { get; set; }
+
+    [Column("receipt_sent_at")]
+    public DateTime? ReceiptSentAt { get; set; }
 }
