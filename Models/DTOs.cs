@@ -21,6 +21,34 @@ public record PickupBookingDto(
     string? WithdrawalConsentVersion
 );
 
+public record BookingPhotoDto(
+    Guid Id,
+    Guid BookingId,
+    string Url,
+    string? Note,
+    DateTimeOffset CreatedAt
+);
+
+public record BookingDetailDto(
+    Guid Id,
+    DateOnly PickupDate,
+    TimeOnly PickupTime,
+    string PickupAddress,
+    Guid CustomerId,
+    string CustomerName,
+    string CustomerPhone,
+    string? CustomerEmail,
+    int KnifeCount,
+    Guid? PaymentId,
+    string? PaymentMethod,
+    string? PaymentStatus,
+    int? AmountOre,
+    DateTimeOffset? WithdrawalConsentAt,
+    string? WithdrawalConsentText,
+    string? WithdrawalConsentVersion,
+    List<BookingPhotoDto> Photos
+);
+
 public record CustomerDto(
     Guid Id,
     string Name,
@@ -43,23 +71,3 @@ public record CampaignRequest(string Name, int FirstKnifePriceOre, DateOnly? Sta
 
 public record PickupHourDto(short Weekday, string OpensAt, string ClosesAt, int SlotMinutes);
 public record BlockedDateDto(DateOnly Date, string? Reason);
-
-public record BookingPhotoDto(
-    Guid Id,
-    Guid BookingId,
-    string Url,
-    string? Note,
-    DateTimeOffset CreatedAt
-);
-
-public record BookingDetailDto(
-    Guid Id,
-    DateOnly PickupDate,
-    TimeOnly PickupTime,
-    string PickupAddress,
-    Guid CustomerId,
-    string CustomerName,
-    string CustomerPhone,
-    string? CustomerEmail,
-    List<BookingPhotoDto> Photos
-);
